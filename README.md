@@ -24,3 +24,9 @@ Version History
 * Asnychronous iterator implementation.
 * Ability to loop over arrays and counts.
 * Basic deferred object/promise implementation.
+
+Roadmap for Future Development
+------------------------------
+* Integration of nextTick() into the library.
+* Expansion of the library's deferred object/promise implementation.
+* Ability to iterate over the properties in an object.
