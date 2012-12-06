@@ -1,5 +1,5 @@
 /* stackloop.js
- * version 0.1
+ * version 0.2
  * written by Steven Hunt
  */
 
@@ -13,6 +13,18 @@ var stackloop = stackloop || {};
 	sl.context = function(obj, wait) {
 		
 		this.wait = wait !== undefined ? wait : 0;
+		
+		if (this.wait == 0) {
+			this.timeout = function(fn) {
+				window.setZeroTimeout(fn);
+			};
+		}
+		else {
+			this.timeout = function(fn) {
+				window.setTimeout(fn, this.wait);
+			};
+		}
+		
 		this.context = obj !== undefined ? obj : {};
 		
 		var iteratorStack = new Array();
@@ -24,9 +36,15 @@ var stackloop = stackloop || {};
 		var lc = this;
 		var iterator = function(start, end, val, stepFn, finishedFn) {
 
-			this.context = lc.context;
-		
-			if (val.constructor === Array) {
+			this.context = lc.context;		
+			this.condition =  null;
+
+			if (val === false && typeof start === "function") {
+				this.current = null;
+				this.currentIndex = null;
+				this.condition = start;
+			}
+			else if (val.constructor === Array) {
 				this.current = val[start];		
 				this.currentIndex = start;
 			}
@@ -56,12 +74,17 @@ var stackloop = stackloop || {};
 			}
 
 			this.index = function() {
+				if (val === false) { return null; }
 				return (val.constructor === Array ? this.currentIndex : this.current);
 			};
 
 			//increment step counter and trigger the next step.
-			this.increment = function() {				
-				if (val.constructor === Array) {
+			this.increment = function() {		
+				if (this.condition !== null) {
+					if (!this.condition.call(this))
+						return onfinish(null, 1);
+				}
+				else if (val.constructor === Array) {
 					this.currentIndex++;
 					this.current = (this.currentIndex < val.length) ? val[this.currentIndex] : null;
 				}
@@ -78,9 +101,9 @@ var stackloop = stackloop || {};
 					
 					//try stepping again later.
 					var con = this;
-					setTimeout(function() {
+					lc.timeout(function() {
 						con.step();
-					}, lc.wait);
+					});
 
 					return null;
 				}
@@ -91,8 +114,8 @@ var stackloop = stackloop || {};
 				
 				//run step function on delay.
 				var that = this;
-				setTimeout(function() {
-				
+				lc.timeout(function() {
+			
 					var result = false;
 					
 					try { result = defer.step(that.current);/*stepFn.call(lc.context, that.current);*/ }
@@ -107,7 +130,7 @@ var stackloop = stackloop || {};
 					//otherwise, keep going...
 					else
 						that.increment();
-				}, lc.wait);
+				});
 				
 				//if we made it this far, return true.
 				return true;
@@ -134,6 +157,18 @@ var stackloop = stackloop || {};
 		//iterate through the array...
 		this.forEach = function(array, step, finished) {
 			var i = new iterator(0, array.length, array, step, finished);
+			return i.start();
+		};
+		
+		//iterate while a condition is true...
+		this.whiteTrue = function(fn, step, finished) {
+			var i = new iterator(fn, true, false, step, finished);
+			return i.start();
+		};
+
+		//iterate while a condition is true...
+		this.whiteFalse = function(fn, step, finished) {
+			var i = new iterator(fn, false, false, step, finished);
 			return i.start();
 		};
 	};
@@ -191,3 +226,39 @@ var stackloop = stackloop || {};
 
 	
 })(stackloop);
+
+// This code was written by David Baron
+// http://dbaron.org/log/
+// Only add setZeroTimeout to the window object, and hide everything else in a closure.
+//edited by Steven Hunt
+(function() {
+
+	//EDIT: added check for an existing method, in case the user wants to implement their own version of setZeroTimeout().
+	if (!window.setZeroTimeout) {
+		var timeouts = [];
+		var messageName = "zero-timeout-message";
+
+		// Like setTimeout, but only takes a function argument.  There's
+		// no time argument (always zero) and no arguments (you have to
+		// use a closure).
+		function setZeroTimeout(fn) {
+			timeouts.push(fn);
+			window.postMessage(messageName, "*");
+		}
+
+		function handleMessage(event) {
+			if (event.source == window && event.data == messageName) {
+				event.stopPropagation();
+				if (timeouts.length > 0) {
+					var fn = timeouts.shift();
+					fn();
+				}
+			}
+		}
+
+		window.addEventListener("message", handleMessage, true);
+
+		// Add the one thing we want added to the window object.
+		window.setZeroTimeout = setZeroTimeout;
+	}
+})();

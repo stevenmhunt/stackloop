@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="demo.css" />
+	</head>
+	<body>
+
+		<h1>Stack Loop Demo 2</h1>
+		Using nested asynchronous loops to calculate 2e+10;
+		<br /><br />
+
+		<div class="example-box">
+			<div class="example-header">Nested Loops with<br />conventional for loops</div>
+			<div class="example-body" id="example1"></div>
+		</div>
+		<div class="example-box">
+			<div class="example-header">Nested Async Loops with setTimeout(..., 1)</div>
+			<div class="example-body" id="example2">Waiting...</div>
+		</div>
+		<div class="example-box">
+			<div class="example-header">Nested Async Loops with setZeroTimeout(...)</div>
+			<div class="example-body" id="example3">Waiting...</div>
+		</div>
+
+		<div class="clear-both">
+			<br />
+			<b>Note: </b>the stackloop.js library automatically uses <a target="_blank" href="http://dbaron.org/log/20100309-faster-timeouts">setZeroTimeout</a>() when the wait parameter is set to zero (which is default).
+		</div>
+		
+		<script type="text/javascript" src="../stackloop.js"></script>
+		<script type="text/javascript" src="demo2.js"></script>
+
+	</body>
+</html>
