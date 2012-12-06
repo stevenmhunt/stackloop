@@ -12,7 +12,7 @@ var stackloop = stackloop || {};
 	//tracks a series of iterators so that we layer the delayed function calls correctly.
 	sl.context = function(obj, wait) {
 		
-		this.wait = wait !== undefined ? wait : 1;
+		this.wait = wait !== undefined ? wait : 0;
 		this.context = obj !== undefined ? obj : {};
 		
 		var iteratorStack = new Array();

@@ -1,5 +1,5 @@
-Stack Loop v0.1
-=========
+# Stack Loop
+## Version 0.1
 
 Supports nested asynchronous iteration across arrays and counts in javascript.
 
