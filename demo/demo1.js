@@ -1,5 +1,8 @@
 /* Javascript for Stack Loop Demo 1 */
 
+//get stackloop's current version and write it to the screen.
+document.getElementById("curr_version").innerHTML = stackloop.version;
+
 //test data to use.
 var data = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -35,18 +38,18 @@ writeLine("example2", "1: "+'done!');
 //asynchronous loop using promises.
 var context2 = new stackloop.context(null, 20);
 
-context2.forCount(0, 10).then(function(i) {
+context2.forCount(0, 10).step(function(i) {
 
-  context2.forEach(data).then(function(j) {
+  context2.forEach(data).step(function(j) {
   
 		writeLine("example3", "2: "+i+", "+j);
 	
-	}, function() {
+	}).then(function() {
 	
 	writeLine("example3", "2: "+'inner done.');
 	
 	});
-}, function() {
+}).then(function() {
 
 writeLine("example3", "2: "+'done!');
 

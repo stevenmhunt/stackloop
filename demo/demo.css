@@ -29,3 +29,7 @@ body {
 .clear-both {
 	clear: both;
 }
+
+#curr_version {
+	font-weight: bold;
+}

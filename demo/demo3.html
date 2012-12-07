@@ -6,6 +6,7 @@
 	<body>
 
 		<h1>Stack Loop Demo 3</h1>
+		Version:&nbsp;<span id="curr_version">unknown</span><br /><br />
 		Using asynchronous conditional loops.
 		<br /><br />
 
@@ -21,14 +22,18 @@
 			<div class="example-header">Async Loop with setZeroTimeout(...)</div>
 			<div class="example-body" id="example3">Waiting...</div>
 		</div>
+		<div class="example-box">
+			<div class="example-header">Async Loop with setZeroTimeout/Promise</div>
+			<div class="example-body" id="example4">Waiting...</div>
+		</div>
 
 		<div class="clear-both">
 			<br />
 			<b>Note: </b>the stackloop.js library automatically uses <a target="_blank" href="http://dbaron.org/log/20100309-faster-timeouts">setZeroTimeout</a>() when the wait parameter is set to zero (which is default).
 		</div>
 		
-		<script type="text/javascript" src="../stackloop.js"></script>
-		<script type="text/javascript" src="demo2.js"></script>
+		<script type="text/javascript" src="../stackloop.min.js"></script>
+		<script type="text/javascript" src="demo3.js"></script>
 
 	</body>
 </html>

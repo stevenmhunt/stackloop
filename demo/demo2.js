@@ -1,5 +1,8 @@
 /* Javascript for Stack Loop Demo 2 */
 
+//get stackloop's current version and write it to the screen.
+document.getElementById("curr_version").innerHTML = stackloop.version;
+
 //utility function to write to screen.
 function write(id, str) {
 	document.getElementById(id).innerHTML = str;

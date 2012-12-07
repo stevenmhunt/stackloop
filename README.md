@@ -1,7 +1,9 @@
-# Stack Loop
-## Version 0.2
+stackloop.js: Simple Asynchronous Nested Iteration
+==================================================
 
-Supports nested asynchronous iteration across arrays and counts in javascript.
+**Version 0.3**
+
+*Supports nested asynchronous iteration across objects and value ranges in javascript.*
 
 Overview
 --------
@@ -16,6 +18,13 @@ Also take a look at some [Examples](https://github.com/stevenmtwhunt/stackloop/w
 Version History
 ---------------
 
+### Version 0.3
+* Added additional demos.
+* Removed the whileFalse() function to minimize redundancy.
+* Expanded of the library's deferred object/promise implementation.
+* Added ability to iterate over the properties in an object and characters of a string.
+* Added minified production version of the library.
+
 ### Version 0.2
 * Added [setZeroTimeout](http://dbaron.org/log/20100309-faster-timeouts)() into the library, used by default over setTimeout().
 * Added ability to implement conditional asynchronous loops.
@@ -28,5 +37,3 @@ Version History
 Roadmap for Future Development
 ------------------------------
 * Integration of nextTick() into the library.
-* Expansion of the library's deferred object/promise implementation.
-* Ability to iterate over the properties in an object.

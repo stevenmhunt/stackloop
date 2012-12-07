@@ -1,10 +1,10 @@
 /* stackloop.js
- * version 0.2
+ * version 0.3
  * written by Steven Hunt
- */
+ * released under the MIT License. */
 
 //create the stackloop "namespace".
-var stackloop = stackloop || {};
+var stackloop = stackloop || { version: "0.3" };
 
 //create definitions for stackloop classes.
 (function(sl) {
@@ -13,7 +13,7 @@ var stackloop = stackloop || {};
 	sl.context = function(obj, wait) {
 		
 		this.wait = wait !== undefined ? wait : 0;
-		
+				
 		if (this.wait == 0) {
 			this.timeout = function(fn) {
 				window.setZeroTimeout(fn);
@@ -25,7 +25,7 @@ var stackloop = stackloop || {};
 			};
 		}
 		
-		this.context = obj !== undefined ? obj : {};
+		this.context = obj !== undefined ? obj : this;
 		
 		var iteratorStack = new Array();
 		var pushIterator = function(i) { iteratorStack.push(i); }
@@ -39,23 +39,49 @@ var stackloop = stackloop || {};
 			this.context = lc.context;		
 			this.condition =  null;
 
+			//stores what type of iteration we're performing.
+			var i_type = 1;
+
+			//conditional function
 			if (val === false && typeof start === "function") {
 				this.current = null;
 				this.currentIndex = null;
 				this.condition = start;
+				i_type = 5;
 			}
+			
+			//array iteration
 			else if (val.constructor === Array) {
 				this.current = val[start];		
 				this.currentIndex = start;
+				i_type = 4;
 			}
+			
+			//string iteration
+			else if (typeof val == 'string' || val instanceof String) {
+				this.current = val.charAt(start);
+				this.currentIndex = start;
+				i_type = 3;
+			}
+			
+			//object property iteration
+			else if (isNaN(val)) {
+				this.keys = Object.keys(val);
+				this.current = val[this.keys[start]];
+				this.currentIndex = start;
+				i_type = 2;
+			}
+			
+			//count iteration
 			else
 				this.current = start;
 
 			//when the iterator is created, we need to push this object onto the iterator stack.
 			pushIterator(this);
 
+			//use deferred object to manage step and finished functions.
 			var defer = new sl.deferred(this);
-			defer.then(stepFn, finishedFn, null);
+			defer.then(finishedFn, null, stepFn);
 						
 			// result { 1 = iterator finished successfully, 2 = step function stopped iteration, 3 = exception was thrown }
 			var onfinish = function(curr, result, err) {
@@ -63,7 +89,7 @@ var stackloop = stackloop || {};
 				if (result < 3)
 					defer.success();
 				else
-					defer.fail();
+					defer.fail(err);
 				//call the finish function if possible.
 				//if (finishedFn)
 				//	finishedFn.call(lc.context, curr, result, err);
@@ -73,23 +99,55 @@ var stackloop = stackloop || {};
 				return false;
 			}
 
-			this.index = function() {
-				if (val === false) { return null; }
-				return (val.constructor === Array ? this.currentIndex : this.current);
+			//indicates whether to proceed with the iteration, or stop.
+			this.proceed = function() {
+			
+				switch(i_type) {
+					case 1:
+						return this.current < end;
+					case 2:
+						return this.currentIndex < this.keys.length;
+					case 3:
+					case 4:
+						return this.currentIndex < val.length;
+				}
+				
+				//if we're using a conditional function, return true and let the condition function determine whether to continue.
+				return true;
 			};
 
 			//increment step counter and trigger the next step.
 			this.increment = function() {		
-				if (this.condition !== null) {
-					if (!this.condition.call(this))
-						return onfinish(null, 1);
+				switch(i_type) {
+
+					//count iteration
+					case 1:
+						this.current += val;
+						break;
+
+					//object property iteration
+					case 2:
+						this.currentIndex++;
+						this.current = (this.currentIndex < this.keys.length) ? val[this.keys[this.currentIndex]] : null;
+						break;
+					//string iteration
+					case 3:
+						this.currentIndex++;
+						this.current = (this.currentIndex < val.length) ? val.charAt(this.currentIndex) : null;
+						break;
+					//array iteration
+					case 4:
+						this.currentIndex++;
+						this.current = (this.currentIndex < val.length) ? val[this.currentIndex] : null;
+						break;
+					//conditional function
+					case 5:
+						if (!this.condition.call(this))
+							return onfinish(null, 1);
+						break;
 				}
-				else if (val.constructor === Array) {
-					this.currentIndex++;
-					this.current = (this.currentIndex < val.length) ? val[this.currentIndex] : null;
-				}
-				else
-					this.current += val;
+
+				//run the next step.
 				this.step();
 			};
 
@@ -109,7 +167,7 @@ var stackloop = stackloop || {};
 				}
 			
 				//if we're out of the iteration, run close-out.
-				if (this.index() >= end)
+				if (!this.proceed())
 					return onfinish(this.current, 1);
 				
 				//run step function on delay.
@@ -136,6 +194,7 @@ var stackloop = stackloop || {};
 				return true;
 			};
 			
+			//called to start the iteration.
 			this.start = function() {
 				this.step();
 				return defer.promise;
@@ -161,14 +220,8 @@ var stackloop = stackloop || {};
 		};
 		
 		//iterate while a condition is true...
-		this.whiteTrue = function(fn, step, finished) {
+		this.whileTrue = function(fn, step, finished) {
 			var i = new iterator(fn, true, false, step, finished);
-			return i.start();
-		};
-
-		//iterate while a condition is true...
-		this.whiteFalse = function(fn, step, finished) {
-			var i = new iterator(fn, false, false, step, finished);
 			return i.start();
 		};
 	};
@@ -182,7 +235,8 @@ var stackloop = stackloop || {};
 		var fail = new Array();
 		var step = new Array();
 
-		this.then = function(fnStep, fnSuccess, fnFail) {
+		//registers callbacks with the deferred object.
+		this.then = function(fnSuccess, fnFail, fnStep) {
 			if (typeof fnSuccess === "function")
 				success.push(fnSuccess);
 			if (typeof fnFail === "function")
@@ -192,16 +246,21 @@ var stackloop = stackloop || {};
 			return this;
 		};
 		
+		//indicates successful completion of the iteration.
 		this.success = function() {
 			for (var i = 0; i < success.length; i++) {
 				success[i].call(iterator);
 			}
 		};
-		this.fail = function() {
+
+		//indicates failure to complete the iteration with optional error message.
+		this.fail = function(err) {
 			for (var i = 0; i < fail.length; i++) {
-				fail[i].call(iterator);
+				fail[i].call(iterator, err);
 			}
 		};
+		
+		//indicates that an iteration step has been executed.
 		this.step = function(val) {
 			var result = true;
 			for (var i = 0; i < step.length; i++) {
@@ -215,15 +274,31 @@ var stackloop = stackloop || {};
 	//implementation of commonJS Promise A.
 	sl.promise = function(d) {
 				
-		this.then = function(fnStep, fnSuccess, fnFail) {
-			if (fnStep !== undefined && fnSuccess === undefined && fnFail === undefined)
-				d.then(null, fnStep, null);
-			else
-				d.then(fnStep, fnSuccess, fnFail);
+		//wrapper for deferred object then().
+		this.then = function(fnSuccess, fnFail, fnStep) {
+			d.then(fnSuccess, fnFail, fnStep);
 			return this;
 		};
-	};
+		
+		//add a success function callback.
+		this.success = function(fn) {
+			d.then(fn, null, null);
+			return this;
+		};
 
+		//add a fail function callback.
+		this.fail = function(fn) {
+			d.then(null, fn, null);
+			return this;
+		};
+
+		//add a step function callback.
+		this.step = function(fn) {
+			d.then(null, null, fn);
+			return this;
+		};
+
+	};
 	
 })(stackloop);
 
